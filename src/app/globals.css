@@ -9,7 +9,7 @@
   --background-end-rgb: 255, 255, 255;
 }
 
-body {
+s body {
   color: rgb(var(--foreground-rgb));
   background: white;
 }
