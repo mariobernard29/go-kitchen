@@ -1,6 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* ... el resto de tus estilos (body, :root) déjalos igual ... */
+:root {
+  --foreground-rgb: 0, 0, 0;
+  /* ... */
+}
 
 /* Aquí puedes agregar estilos globales personalizados si los necesitas */
 :root {

@@ -7,6 +7,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { ChefHat, Mail, Lock, Store, Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export default function SignupPage() {
     const router = useRouter();
@@ -174,7 +175,16 @@ export default function SignupPage() {
                         </button>
                     </div>
                 </form>
+                <div className="text-center mt-4">
+                    <p className="text-sm text-gray-600">
+                        ¿Ya tienes cuenta?{" "}
+                        <Link href="/login" className="font-medium text-orange-600 hover:text-orange-500">
+                            Inicia sesión
+                        </Link>
+                    </p>
+                </div>
             </div>
+
         </div>
     );
 }

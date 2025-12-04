@@ -34,7 +34,8 @@ export default function TableSelector({ onSelectTable }: TableSelectorProps) {
         // CAMBIO: Ahora escuchamos "open", "cooking" y "ready" para que la mesa siga roja mientras cocinan
         const qOrders = query(
             collection(db, "restaurants", auth.currentUser.uid, "orders"),
-            where("status", "in", ["open", "cooking", "ready"])
+            // CAMBIO AQUÍ: de "open" a "pending"
+            where("status", "in", ["pending", "cooking", "ready"])
         );
 
         // ... el resto sigue igual ...

@@ -32,7 +32,7 @@ export default function DashboardLayout({
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (!currentUser) {
-                router.push("/signup"); // Si no hay usuario, mandar a registro/login
+                router.push("/login"); // Ahora mandamos al login
             } else {
                 setUser(currentUser);
                 setLoading(false);

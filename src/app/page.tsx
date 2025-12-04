@@ -20,7 +20,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-gray-600 hover:text-orange-600 font-medium hidden md:block">
+            <Link href="/login" className="text-gray-600 hover:text-orange-600 font-medium hidden md:block">
               Iniciar Sesión
             </Link>
             <Link

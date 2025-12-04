@@ -21,7 +21,8 @@ export default function KitchenPage() {
                 // CAMBIO: Agregamos "open" a la lista para que aparezcan apenas el mesero las mande
                 const q = query(
                     collection(db, "restaurants", user.uid, "orders"),
-                    where("status", "in", ["open", "cooking"]),
+                    // CAMBIO AQUÍ: de "open" a "pending"
+                    where("status", "in", ["pending", "cooking"]),
                     orderBy("createdAt", "asc")
                 );
 
