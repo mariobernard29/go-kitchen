@@ -11,34 +11,32 @@ export default function InventoryPage() {
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Estado para el formulario de nuevo producto
+    // CORRECCIÓN: Usamos "" (vacío) en lugar de "0" para que el input se limpie visualmente
     const [newProduct, setNewProduct] = useState({
         name: "",
         price: "",
         category: "General",
-        stock: "0",
-        destination: "kitchen" // Nuevo campo por defecto
+        stock: "",
+        destination: "kitchen"
     });
 
-    // 1. ESCUCHAR PRODUCTOS EN TIEMPO REAL
-    // Esto hace que si agregas un producto, aparezca solo sin recargar la página
     useEffect(() => {
-        // Esperamos a que Firebase confirme quién es el usuario
         const unsubscribeAuth = auth.onAuthStateChanged((user) => {
             if (user) {
-                // Buscamos en la colección: restaurants -> {id_usuario} -> products
                 const q = query(
                     collection(db, "restaurants", user.uid, "products"),
                     orderBy("createdAt", "desc")
                 );
 
-                // onSnapshot escucha cambios en vivo
                 const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
                     const productsData = snapshot.docs.map((doc) => ({
                         id: doc.id,
                         ...doc.data(),
                     }));
                     setProducts(productsData);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error leyendo productos:", error);
                     setLoading(false);
                 });
 
@@ -51,32 +49,38 @@ export default function InventoryPage() {
         return () => unsubscribeAuth();
     }, []);
 
-    // 2. GUARDAR NUEVO PRODUCTO
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!auth.currentUser) return;
         setIsSubmitting(true);
 
         try {
-            // Guardamos en Firestore
+            // Validamos que los números sean válidos
+            const priceValue = parseFloat(newProduct.price) || 0;
+            const stockValue = parseInt(newProduct.stock) || 0;
+
             await addDoc(collection(db, "restaurants", auth.currentUser.uid, "products"), {
-                // ... resto de campos
-                destination: newProduct.destination, // Guardamos el destino
+                name: newProduct.name,
+                price: priceValue,
+                category: newProduct.category,
+                stock: stockValue,
+                destination: newProduct.destination,
                 createdAt: serverTimestamp(),
             });
 
-            // Limpiamos el formulario
-            setNewProduct({ name: "", price: "", category: "General", stock: "0", destination: "kitchen" });
-            alert("Producto agregado correctamente");
+            // CORRECCIÓN: Limpiamos los campos a vacío "" para que se borren del input
+            setNewProduct({ name: "", price: "", category: "General", stock: "", destination: "kitchen" });
+
+            // No usamos alert() bloqueante, mejor dejamos que el usuario vea aparecer el producto
         } catch (error) {
             console.error("Error al guardar:", error);
-            alert("Hubo un error al guardar el producto");
+            alert("Hubo un error al guardar.");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (loading) return <div className="p-8">Cargando inventario...</div>;
+    if (loading) return <div className="p-8 text-orange-500">Cargando inventario...</div>;
 
     return (
         <div className="max-w-5xl mx-auto">
@@ -87,18 +91,18 @@ export default function InventoryPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                {/* --- FORMULARIO DE ALTA (Izquierda) --- */}
+                {/* --- FORMULARIO --- */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border h-fit">
                     <h2 className="font-semibold text-lg mb-4">Nuevo Producto</h2>
                     <form onSubmit={handleAddProduct} className="space-y-4">
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Plato</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                             <input
                                 type="text"
                                 required
-                                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 outline-none"
-                                placeholder="Ej. Hamburguesa Doble"
+                                className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500"
+                                placeholder="Ej. Tacos de Asada"
                                 value={newProduct.name}
                                 onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                             />
@@ -113,7 +117,7 @@ export default function InventoryPage() {
                                         type="number"
                                         required
                                         step="0.01"
-                                        className="w-full border rounded-lg pl-9 py-2 focus:ring-2 focus:ring-orange-500 outline-none"
+                                        className="w-full border rounded-lg pl-9 py-2 outline-none focus:ring-2 focus:ring-orange-500"
                                         placeholder="0.00"
                                         value={newProduct.price}
                                         onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
@@ -121,49 +125,51 @@ export default function InventoryPage() {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Stock Inicial</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
                                 <input
                                     type="number"
                                     required
-                                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 outline-none"
+                                    className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500"
+                                    placeholder="0"
                                     value={newProduct.stock}
                                     onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
                                 />
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                            <div className="relative">
-                                <Tag className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    required
-                                    list="categories"
-                                    className="w-full border rounded-lg pl-9 py-2 focus:ring-2 focus:ring-orange-500 outline-none"
-                                    placeholder="Ej. Bebidas, Parrilla..."
-                                    value={newProduct.category}
-                                    onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-                                />
-                                {/* Sugerencias simples */}
-                                <datalist id="categories">
-                                    <option value="Bebidas" />
-                                    <option value="Entradas" />
-                                    <option value="Platos Fuertes" />
-                                    <option value="Postres" />
-                                </datalist>
+                        {/* Categoría y Destino */}
+                        <div className="grid grid-cols-1 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                                <div className="relative">
+                                    <Tag className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        required
+                                        list="categories"
+                                        className="w-full border rounded-lg pl-9 py-2 outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="Ej. Bebidas"
+                                        value={newProduct.category}
+                                        onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                                    />
+                                    <datalist id="categories">
+                                        <option value="Bebidas" />
+                                        <option value="Entradas" />
+                                        <option value="Platos Fuertes" />
+                                    </datalist>
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Destino de Impresión</label>
-                            <select
-                                className="w-full border rounded-lg px-3 py-2 outline-none"
-                                value={newProduct.destination}
-                                onChange={(e) => setNewProduct({ ...newProduct, destination: e.target.value })}
-                            >
-                                <option value="kitchen">Cocina (Comida)</option>
-                                <option value="bar">Barra (Bebidas)</option>
-                            </select>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Destino (Ticket)</label>
+                                <select
+                                    className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                                    value={newProduct.destination}
+                                    onChange={(e) => setNewProduct({ ...newProduct, destination: e.target.value })}
+                                >
+                                    <option value="kitchen">Cocina 🍳</option>
+                                    <option value="bar">Barra 🍺</option>
+                                </select>
+                            </div>
                         </div>
 
                         <button
@@ -177,17 +183,17 @@ export default function InventoryPage() {
                     </form>
                 </div>
 
-                {/* --- LISTA DE PRODUCTOS (Derecha) --- */}
+                {/* --- LISTA --- */}
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
                         <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-                            <h3 className="font-semibold text-gray-700">Catálogo Actual</h3>
-                            <span className="text-sm text-gray-500">{products.length} productos</span>
+                            <h3 className="font-semibold text-gray-700">Catálogo</h3>
+                            <span className="text-sm text-gray-500">{products.length} items</span>
                         </div>
 
                         {products.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500">
-                                No tienes productos aún. ¡Agrega el primero!
+                            <div className="p-12 text-center text-gray-400">
+                                Tu inventario está vacío.
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
@@ -196,6 +202,7 @@ export default function InventoryPage() {
                                         <tr>
                                             <th className="p-4">Nombre</th>
                                             <th className="p-4">Categoría</th>
+                                            <th className="p-4">Destino</th>
                                             <th className="p-4">Precio</th>
                                             <th className="p-4">Stock</th>
                                         </tr>
@@ -205,9 +212,12 @@ export default function InventoryPage() {
                                             <tr key={product.id} className="hover:bg-gray-50">
                                                 <td className="p-4 font-medium text-gray-900">{product.name}</td>
                                                 <td className="p-4">
-                                                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
                                                         {product.category}
                                                     </span>
+                                                </td>
+                                                <td className="p-4 text-xs text-gray-500 uppercase">
+                                                    {product.destination === 'bar' ? 'Barra' : 'Cocina'}
                                                 </td>
                                                 <td className="p-4 font-bold text-gray-700">
                                                     ${(Number(product.price) || 0).toFixed(2)}
